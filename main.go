@@ -3,16 +3,17 @@ package main
 import (
 	"fmt"
 
-	"github.com/nakusha/learngo/accounts"
+	"github.com/nakusha/learngo/mydict"
 )
 
 func main() {
-	account := accounts.NewAccount("Yeonsu")
-	account.Deposit(100)
-	// fmt.Println(account.Balance())
-	// err := account.Withdraw(10)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	fmt.Println(account)
+	dictionary := mydict.Dictionary{"first": "First word"}
+
+	definition, err := dictionary.Search("second")
+	if err != nil {
+		// log.Fatalln(err)
+		fmt.Println(err)
+	} else {
+		fmt.Println(definition)
+	}
 }
