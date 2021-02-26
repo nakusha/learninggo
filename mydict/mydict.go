@@ -10,6 +10,8 @@ import "errors"
 type Dictionary map[string]string
 
 var errNotFound = errors.New("Not Found")
+var errWordExists = errors.New("Word already Exists")
+var errFail = errors.New("Fail")
 
 // Search Dictionary
 func (d Dictionary) Search(word string) (string, error) {
@@ -18,4 +20,22 @@ func (d Dictionary) Search(word string) (string, error) {
 		return value, nil
 	}
 	return "", errNotFound
+}
+
+// Add word to deictionary
+func (d Dictionary) Add(word, def string) error {
+	_, err := d.Search(word)
+
+	switch err {
+	case errNotFound:
+		d[word] = def
+	case nil:
+		return errWordExists
+	}
+	// if err == errNotFound {
+	// 	d[word] = def
+	// } else if err == nil {
+	// 	return errWordExists
+	// }
+	return nil
 }
