@@ -9,9 +9,12 @@ import "errors"
 // Dcitionary
 type Dictionary map[string]string
 
-var errNotFound = errors.New("Not Found")
-var errWordExists = errors.New("Word already Exists")
-var errFail = errors.New("Fail")
+var (
+	errNotFound   = errors.New("Not Found")
+	errWordExists = errors.New("Word already Exists")
+	errCantUpdate = errors.New("Cant update non-existing word")
+	errCantDelete = errors.New("Cant delete non-existing word")
+)
 
 // Search Dictionary
 func (d Dictionary) Search(word string) (string, error) {
@@ -37,5 +40,30 @@ func (d Dictionary) Add(word, def string) error {
 	// } else if err == nil {
 	// 	return errWordExists
 	// }
+	return nil
+}
+
+// Update Word
+func (d Dictionary) Update(word, def string) error {
+	_, err := d.Search(word)
+
+	switch err {
+	case nil:
+		d[word] = def
+	case errNotFound:
+		return errCantUpdate
+	}
+	return nil
+}
+
+// Delete word
+func (d Dictionary) Delete(word string) error {
+	_, err := d.Search(word)
+	switch err {
+	case errNotFound:
+		return errCantDelete
+	case nil:
+		delete(d, word)
+	}
 	return nil
 }
