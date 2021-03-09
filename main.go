@@ -1,49 +1,53 @@
-// package main
+package main
 
-// import (
-// 	"errors"
-// 	"fmt"
-// 	"net/http"
-// )
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
 
-// var errRequestFailed = errors.New("Fail to Rquest url")
+	"github.com/PuerkitoBio/goquery"
+)
 
-// func main() {
-// 	var results = make(map[string]string)
-// 	urls := []string{
-// 		"https://www.airbnb.com/",
-// 		"https://www.google.com/",
-// 		"https://www.amazon.com/",
-// 		"https://www.reddit.com/",
-// 		"https://soundcloud.com/",
-// 		"https://www.instagram.com/",
-// 		"https://academy.nomadcoders.co/",
-// 	}
+var baseURL string = "https://kr.indeed.com/%EC%B7%A8%EC%97%85?q=react&limit=50"
 
-// 	for _, url := range urls {
-// 		result := "OK"
-// 		err := hitURL(url)
+func main() {
+	totalPages := getPages()
 
-// 		if err != nil {
-// 			result = "FAIL"
-// 		}
-// 		results[url] = result
-// 	}
+	for i := 0; i < totalPages; i++ {
+		getPage(i)
+	}
+}
 
-// 	for url, result := range results {
-// 		fmt.Println(url, result)
-// 	}
+func getPage(page int) {
+	pageURL := baseURL + "&start=" + strconv.Itoa(50*page)
+	fmt.Println(pageURL)
+}
 
-// }
+func getPages() int {
+	pages := 0
+	res, err := http.Get(baseURL)
+	checkErr(err)
+	checkCode(res)
 
-// func hitURL(url string) error {
-// 	fmt.Println("Check Url : ", url)
-// 	resp, err := http.Get(url)
+	defer res.Body.Close()
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	checkErr(err)
 
-// 	if err != nil || resp.StatusCode >= 400 {
-// 		fmt.Println(err, resp.StatusCode)
-// 		return errRequestFailed
-// 	}
+	doc.Find(".pagination").Each(func(i int, s *goquery.Selection) {
+		pages = s.Find("a").Length()
+	})
+	return pages
+}
 
-// 	return nil
-// }
+func checkErr(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func checkCode(res *http.Response) {
+	if res.StatusCode != 200 {
+		log.Fatalln("Request Failed with Status : ", res.StatusCode)
+	}
+}
