@@ -23,11 +23,16 @@ type extractedJob struct {
 }
 
 func main() {
+	c := make(chan []extractedJob)
 	var jobs []extractedJob
 	totalPages := getPages()
 
 	for i := 0; i < totalPages; i++ {
-		extractedJobs := getPage(i)
+		go getPage(i, c)
+	}
+
+	for i := 0; i < totalPages; i++ {
+		extractedJobs := <-c
 		jobs = append(jobs, extractedJobs...)
 	}
 
@@ -35,26 +40,7 @@ func main() {
 	fmt.Println("CSV File Create Success : ", len(jobs))
 }
 
-// make csv file from extractedJob slice
-// encoding csv package
-func writeJob(jobs []extractedJob) {
-	file, err := os.Create("jobs.csv")
-	checkErr(err)
-
-	w := csv.NewWriter(file)
-	defer w.Flush()
-
-	headers := []string{"ID", "Title", "Location", "Salary", "Summary"}
-	w.Write(headers)
-
-	for _, job := range jobs {
-		jobSlice := []string{"https://kr.indeed.com/viewjob?jk=" + job.id, job.title, job.location, job.salary, job.summary}
-		jwErr := w.Write(jobSlice)
-		checkErr(jwErr)
-	}
-}
-
-func getPage(page int) []extractedJob {
+func getPage(page int, pagec chan<- []extractedJob) {
 	c := make(chan extractedJob)
 	var jobs []extractedJob
 	pageURL := baseURL + "&start=" + strconv.Itoa(50*page)
@@ -76,7 +62,7 @@ func getPage(page int) []extractedJob {
 		jobs = append(jobs, <-c)
 	}
 
-	return jobs
+	pagec <- jobs
 }
 
 func extractJob(card *goquery.Selection, c chan<- extractedJob) {
@@ -124,4 +110,23 @@ func checkCode(res *http.Response) {
 
 func cleanString(text string) string {
 	return strings.Join(strings.Fields(strings.TrimSpace(text)), " ")
+}
+
+// make csv file from extractedJob slice
+// encoding csv package
+func writeJob(jobs []extractedJob) {
+	file, err := os.Create("jobs.csv")
+	checkErr(err)
+
+	w := csv.NewWriter(file)
+	defer w.Flush()
+
+	headers := []string{"ID", "Title", "Location", "Salary", "Summary"}
+	w.Write(headers)
+
+	for _, job := range jobs {
+		jobSlice := []string{"https://kr.indeed.com/viewjob?jk=" + job.id, job.title, job.location, job.salary, job.summary}
+		jwErr := w.Write(jobSlice)
+		checkErr(jwErr)
+	}
 }
