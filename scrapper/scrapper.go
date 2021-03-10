@@ -1,4 +1,4 @@
-package main
+package scrapper
 
 import (
 	"encoding/csv"
@@ -12,8 +12,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-var baseURL string = "https://kr.indeed.com/%EC%B7%A8%EC%97%85?q=react&limit=50"
-
 type extractedJob struct {
 	id       string
 	title    string
@@ -22,13 +20,14 @@ type extractedJob struct {
 	summary  string
 }
 
-func main() {
+func Scrapper(term string) {
+	var baseURL string = "https://kr.indeed.com/jobs?q=" + term + "&limit=50"
 	c := make(chan []extractedJob)
 	var jobs []extractedJob
-	totalPages := getPages()
+	totalPages := getPages(baseURL)
 
 	for i := 0; i < totalPages; i++ {
-		go getPage(i, c)
+		go getPage(baseURL, i, c)
 	}
 
 	for i := 0; i < totalPages; i++ {
@@ -40,7 +39,7 @@ func main() {
 	fmt.Println("CSV File Create Success : ", len(jobs))
 }
 
-func getPage(page int, pagec chan<- []extractedJob) {
+func getPage(baseURL string, page int, pagec chan<- []extractedJob) {
 	c := make(chan extractedJob)
 	var jobs []extractedJob
 	pageURL := baseURL + "&start=" + strconv.Itoa(50*page)
@@ -67,10 +66,10 @@ func getPage(page int, pagec chan<- []extractedJob) {
 
 func extractJob(card *goquery.Selection, c chan<- extractedJob) {
 	id, _ := card.Attr("data-jk")
-	title := cleanString(card.Find(".title>a").Text())
-	location := cleanString(card.Find(".sjcl").Text())
-	salary := cleanString(card.Find(".salaryText").Text())
-	summary := cleanString(card.Find(".summary").Text())
+	title := CleanString(card.Find(".title>a").Text())
+	location := CleanString(card.Find(".sjcl").Text())
+	salary := CleanString(card.Find(".salaryText").Text())
+	summary := CleanString(card.Find(".summary").Text())
 	c <- extractedJob{
 		id:       id,
 		title:    title,
@@ -80,7 +79,7 @@ func extractJob(card *goquery.Selection, c chan<- extractedJob) {
 	}
 }
 
-func getPages() int {
+func getPages(baseURL string) int {
 	pages := 0
 	res, err := http.Get(baseURL)
 	checkErr(err)
@@ -108,7 +107,7 @@ func checkCode(res *http.Response) {
 	}
 }
 
-func cleanString(text string) string {
+func CleanString(text string) string {
 	return strings.Join(strings.Fields(strings.TrimSpace(text)), " ")
 }
 
